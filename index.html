@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+  <style>
+    body {
+      background-color: #1f2a36;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      background: #111;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: white;
+    }
+    .hidden-input {
+      position: relative;
+    }
+    .toggle-btn {
+      position: absolute;
+      right: 10px;
+      top: 12px;
+      cursor: pointer;
+    }
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .keyboard button {
+      padding: 10px;
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      text-align: center;
+      min-width: 0;
+    }
+    .keyboard button.special {
+      grid-column: span 5;
+    }
+    .btns {
+      display: flex;
+      justify-content: space-between;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 20px;
+      font-family: monospace;
+      color: #2c3f51;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Password Generator</h1>
+    <div class="input-group">
+      <label>Enter a word or phrase:</label>
+      <div class="hidden-input">
+        <input id="inputText" type="password">
+        <span class="toggle-btn" onclick="toggleInput()">👁️</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Select password length:</label>
+      <input type="range" id="lengthSlider" min="8" max="64" value="16">
+      <span id="lengthDisplay">16</span>
+    </div>
+    <div class="btns">
+      <button onclick="generatePassword()">Generate Password</button>
+      <button onclick="clearFields()">Clear</button>
+    </div>
+    <div id="output"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+
+  <script>
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    const input = document.getElementById('inputText');
+    const output = document.getElementById('output');
+    const lengthSlider = document.getElementById('lengthSlider');
+    const lengthDisplay = document.getElementById('lengthDisplay');
+    const keyboard = document.getElementById('keyboard');
+
+    lengthSlider.oninput = () => {
+      lengthDisplay.textContent = lengthSlider.value;
+    };
+
+    function toggleInput() {
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function clearFields() {
+      input.value = '';
+      output.textContent = '';
+    }
+
+    async function generatePassword() {
+      try {
+        const text = input.value;
+        const length = parseInt(lengthSlider.value, 10);
+        const buffer = new TextEncoder('utf-8').encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        Math.seedrandom(hashHex);
+        let pwd = '';
+        for (let i = 0; i < length; i++) {
+          pwd += chars[Math.floor(Math.random() * chars.length)];
+        }
+        output.textContent = 'Generated password: ' + pwd;
+      } catch (e) {
+        console.error('Generation error:', e);
+      }
+    }
+
+    function createKeyboard() {
+      const keys = '1234567890qwertyuiopasdfghjklzxcvbnm!@#$%^&*()';
+      for (let key of keys) {
+        const btn = document.createElement('button');
+        btn.textContent = key;
+        btn.onclick = () => input.value += key;
+        keyboard.appendChild(btn);
+      }
+      const space = document.createElement('button');
+      space.textContent = 'SPACE';
+      space.classList.add('special');
+      space.onclick = () => input.value += ' ';
+      keyboard.appendChild(space);
+      const back = document.createElement('button');
+      back.textContent = 'BACKSPACE';
+      back.classList.add('special');
+      back.onclick = () => input.value = input.value.slice(0, -1);
+      keyboard.appendChild(back);
+    }
+
+    createKeyboard();
+  </script>
+</body>
+</html>
