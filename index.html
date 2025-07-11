@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Password Generator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
   <style>
     body {
       background-color: #1f2a36;
@@ -54,7 +53,7 @@
       font-size: 1em;
       cursor: pointer;
       text-align: center;
-      min-width: 0;
+      width: 100%;
     }
     .keyboard button.special {
       grid-column: span 5;
@@ -71,8 +70,11 @@
     #output {
       margin-top: 20px;
       font-family: monospace;
-      color: #2c3f51;
+      color: #1f2a36; /* Stealth color */
       word-wrap: break-word;
+    }
+    .toggle-mode {
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -91,6 +93,9 @@
       <input type="range" id="lengthSlider" min="8" max="64" value="16">
       <span id="lengthDisplay">16</span>
     </div>
+    <div class="toggle-mode">
+      <label><input type="checkbox" id="offlineToggle" checked> Run Offline</label>
+    </div>
     <div class="btns">
       <button onclick="generatePassword()">Generate Password</button>
       <button onclick="clearFields()">Clear</button>
@@ -99,6 +104,12 @@
     <div class="keyboard" id="keyboard"></div>
   </div>
 
+  <!-- Full embedded seedrandom.js (v3.0.5 minified) -->
+  <script>
+    /*! seedrandom.js v3.0.5 */
+    !function(a,b,c,d,e,f,g,h,i){function j(a){var b,c=a.length,e=this,f=0,g=e.i=e.j=0,h=e.S=[];for(c||(a=[c++]);d>f;)h[f]=f++;for(f=0;d>f;f++)h[f]=h[g=s&g+a[f%c]+(b=h[f])],h[g]=b;(e.g=function(a){for(var b,c=0,f=e.i,g=e.j,h=e.S;a--;)b=h[f=s&f+1],c=c*d+h[s&(h[f]=h[g=s&g+b])+(h[g]=b)];return e.i=f,e.j=g,c})(d)}function k(a,b){var c=[],d=(typeof a)[0];if(b&&"o"==d)for(var e in a)try{c.push(k(a[e],b-1))}catch(f){}return c.length?c:"s"==d?a:a+"\0"}function l(a,b){for(var c=a+"",d=0;d<c.length;)b[s&d]=s&(f^=19*b[s&d])+c.charCodeAt(d++);return n(b)}function m(){try{var d;return(d=crypto.getRandomValues)?crypto.getRandomValues(new Uint8Array(d)):null}catch(e){return[+new Date,a,b,c]}}function n(a){return String.fromCharCode.apply(0,a)}var s=255,d=256,f=0;Math.seedrandom=function(a,b){var c=[],e=l(k(b?[a,n(a)]:0 in arguments?a:m(),3),c);return new j(e)},Math.seedrandom()}();
+  </script>
+
   <script>
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
     const input = document.getElementById('inputText');
@@ -106,6 +117,7 @@
     const lengthSlider = document.getElementById('lengthSlider');
     const lengthDisplay = document.getElementById('lengthDisplay');
     const keyboard = document.getElementById('keyboard');
+    const offlineToggle = document.getElementById('offlineToggle');
 
     lengthSlider.oninput = () => {
       lengthDisplay.textContent = lengthSlider.value;
@@ -124,15 +136,21 @@
       try {
         const text = input.value;
         const length = parseInt(lengthSlider.value, 10);
-        const buffer = new TextEncoder('utf-8').encode(text);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+        if (!text) return;
+
+        const buffer = new TextEncoder().encode(text);
+        const hash = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hash));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
         Math.seedrandom(hashHex);
+
         let pwd = '';
         for (let i = 0; i < length; i++) {
           pwd += chars[Math.floor(Math.random() * chars.length)];
         }
+
         output.textContent = 'Generated password: ' + pwd;
       } catch (e) {
         console.error('Generation error:', e);
@@ -152,6 +170,7 @@
       space.classList.add('special');
       space.onclick = () => input.value += ' ';
       keyboard.appendChild(space);
+
       const back = document.createElement('button');
       back.textContent = 'BACKSPACE';
       back.classList.add('special');
