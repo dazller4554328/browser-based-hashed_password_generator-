@@ -1,210 +1,286 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Secure Password Generator</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline Password Generator</title>
+<style>
+    :root {
+        --bg-color: #f5f5f5;
+        --fg-color: #333;
+        --card-color: white;
+        --input-bg: #fff;
+        --button-bg: #4CAF50;
+        --button-hover: #45a049;
+    }
+    body.dark {
+        --bg-color: #121212;
+        --fg-color: #f0f0f0;
+        --card-color: #1e1e1e;
+        --input-bg: #333;
+        --button-bg: #1f883d;
+        --button-hover: #2ea043;
+    }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #121212;
-      color: #eee;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding-top: 40px;
+        font-family: Arial, sans-serif;
+        max-width: 700px;
+        margin: auto;
+        padding: 20px;
+        background-color: var(--bg-color);
+        color: var(--fg-color);
+        transition: background 0.3s, color 0.3s;
     }
-
-    .card {
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px #00000080;
-      width: 90%;
-      max-width: 600px;
+    .container {
+        background-color: var(--card-color);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
     h1 {
-      text-align: center;
-      margin-bottom: 25px;
-      font-weight: 500;
+        text-align: center;
     }
-
-    .section {
-      margin-bottom: 20px;
+    .form-group {
+        margin-bottom: 15px;
     }
-
-    #inputDisplay {
-      font-size: 1.2em;
-      margin-bottom: 10px;
-      word-wrap: break-word;
+    label {
+        display: block;
+        margin-bottom: 5px;
     }
-
-    .keyboard-row {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 5px;
+    input[type="password"],
+    input[type="text"],
+    select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: var(--input-bg);
+        color: var(--fg-color);
     }
-
-    .keyboard-row button {
-      flex: 0 0 40px;
-      height: 40px;
-      font-size: 16px;
-      background-color: #333;
-      color: #eee;
-      border: none;
-      border-radius: 4px;
-      margin: 2px;
-      cursor: pointer;
-      text-align: center;
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
     }
-
-    .keyboard-row button.special {
-      flex: 0 0 auto;
-      padding: 0 12px;
-      background-color: #444;
-      text-transform: uppercase;
+    button {
+        background-color: var(--button-bg);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        transition: background 0.3s;
     }
-
+    button:hover {
+        background-color: var(--button-hover);
+    }
+    .keyboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+        gap: 4px;
+        margin-top: 10px;
+    }
+    .strength-meter {
+        height: 10px;
+        background: #eee;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .strength-bar {
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s, background-color 0.3s;
+    }
     .output {
-      font-weight: bold;
-      margin-top: 20px;
-      background-color: #1e1e1e;
-      padding: 10px;
-      border-radius: 6px;
+        background: #e0e0e0;
+        border-radius: 5px;
+        padding: 10px;
+        word-break: break-all;
+        margin-top: 10px;
     }
-
-    #passwordOutput {
-      color: #191f26; /* Near-background for stealth */
-      user-select: text;
+    .hidden {
+        display: none;
     }
-
-    input[type="range"] {
-      width: 100%;
+    .toggle-dark {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-size: 20px;
     }
-
-    button.generate {
-      width: 100%;
-      background-color: #00cc99;
-      color: black;
-      font-weight: bold;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin-top: 10px;
-      font-size: 1.1em;
-      cursor: pointer;
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div class="card">
-    <h1>Secure Password Generator</h1>
+<button class="toggle-dark" title="Toggle Dark Mode" onclick="toggleDark()">🌓</button>
+<div class="container">
+<h1>Offline Password Generator</h1>
 
-    <div class="section">
-      <p>Step 1: Type a phrase using the on-screen keyboard.</p>
-      <div id="inputDisplay">Input: <span id="userInput"></span></div>
-      <div id="keyboard"></div>
-    </div>
+<div class="form-group">
+    <label for="masterPassword">Enter your base password:</label>
+    <input type="password" id="masterPassword" placeholder="e.g. mySimplePass123">
+</div>
 
-    <div class="section">
-      <p>Step 2: Choose password length</p>
-      <input type="range" min="8" max="64" value="16" id="lengthSlider">
-      <span id="lengthValue">16</span> characters
-    </div>
+<div class="form-group">
+    <label for="customSalt">Optional: Add salt (e.g. website or label)</label>
+    <input type="text" id="customSalt" placeholder="e.g. gmail.com">
+</div>
 
-    <div class="section">
-      <button class="generate" onclick="generatePassword()">Generate Password</button>
-      <div class="output">Password: <span id="passwordOutput"></span></div>
-    </div>
-  </div>
+<div class="form-group">
+    <label for="passwordLength">Password length: <span id="lengthValue">25</span></label>
+    <input type="range" min="8" max="64" value="25" id="passwordLength">
+</div>
 
-  <script>
-    const userInput = [];
-    let shiftActive = false;
+<div class="form-group">
+    <label for="passwordType">Complexity:</label>
+    <select id="passwordType">
+        <option value="high">High (Letters, Numbers, Symbols)</option>
+        <option value="medium">Medium (Letters and Numbers)</option>
+        <option value="letters">Letters Only</option>
+    </select>
+</div>
 
-    const keyboardRows = [
-      [..."1234567890"],
-      [..."qwertyuiop"],
-      [..."asdfghjkl"],
-      [..."zxcvbnm"],
-      ["SPACE", "BACKSPACE", "SHIFT"]
-    ];
+<div class="checkbox-group">
+    <input type="checkbox" id="showKeyboard" checked>
+    <label for="showKeyboard">On-screen keyboard</label>
+</div>
 
-    function renderKeyboard() {
-      const container = document.getElementById("keyboard");
-      container.innerHTML = "";
+<div class="checkbox-group">
+    <input type="checkbox" id="showPassword">
+    <label for="showPassword">Show password</label>
+</div>
 
-      keyboardRows.forEach(row => {
-        const rowDiv = document.createElement("div");
-        rowDiv.classList.add("keyboard-row");
-        row.forEach(key => {
-          const btn = document.createElement("button");
-          btn.textContent = shiftActive && key.length === 1 && key.match(/[a-z]/i) ? key.toUpperCase() : key;
-          btn.className = key.length > 1 ? "special" : "";
-          btn.onclick = () => handleKey(key);
-          rowDiv.appendChild(btn);
-        });
-        container.appendChild(rowDiv);
-      });
+<div id="keyboard" class="keyboard hidden"></div>
+
+<button id="generateBtn">🔐 Generate Password</button>
+
+<div class="form-group">
+    <label>Password Strength:</label>
+    <div class="strength-meter"><div id="strengthBar" class="strength-bar"></div></div>
+</div>
+
+<div class="form-group">
+    <label>Generated Password:</label>
+    <div class="output" id="generatedPassword">Your password will appear here</div>
+    <button id="copyBtn">📋 Copy</button>
+</div>
+
+</div>
+
+<script>
+const masterPassword = document.getElementById("masterPassword");
+const customSalt = document.getElementById("customSalt");
+const passwordLength = document.getElementById("passwordLength");
+const lengthValue = document.getElementById("lengthValue");
+const passwordType = document.getElementById("passwordType");
+const showPassword = document.getElementById("showPassword");
+const showKeyboard = document.getElementById("showKeyboard");
+const keyboard = document.getElementById("keyboard");
+const generateBtn = document.getElementById("generateBtn");
+const output = document.getElementById("generatedPassword");
+const copyBtn = document.getElementById("copyBtn");
+const strengthBar = document.getElementById("strengthBar");
+
+// Dark mode
+function toggleDark() {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('darkmode', document.body.classList.contains('dark'));
+}
+if (localStorage.getItem('darkmode') === 'true') {
+    document.body.classList.add('dark');
+}
+
+// Keyboard logic
+const qwertyKeys = "1234567890qwertyuiopasdfghjklzxcvbnm!@#$%^&*()_+-=[]{}|;:',.<>?/\~`".split("");
+function buildKeyboard() {
+    keyboard.innerHTML = '';
+    qwertyKeys.forEach(k => {
+        const btn = document.createElement("button");
+        btn.textContent = k;
+        btn.onclick = () => {
+            masterPassword.value += k;
+        };
+        keyboard.appendChild(btn);
+    });
+    ["Backspace", "Clear"].forEach(action => {
+        const btn = document.createElement("button");
+        btn.textContent = action;
+        btn.onclick = () => {
+            if (action === "Backspace") {
+                masterPassword.value = masterPassword.value.slice(0, -1);
+            } else {
+                masterPassword.value = '';
+            }
+        };
+        keyboard.appendChild(btn);
+    });
+}
+showKeyboard.onchange = () => {
+    keyboard.classList.toggle("hidden", !showKeyboard.checked);
+    if (showKeyboard.checked) buildKeyboard();
+};
+if (showKeyboard.checked) buildKeyboard();
+
+// Password length display
+passwordLength.oninput = () => lengthValue.textContent = passwordLength.value;
+
+// Generate password
+function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash;
+}
+
+function generatePassword() {
+    const base = masterPassword.value + (customSalt.value || "");
+    const len = parseInt(passwordLength.value);
+    const complexity = passwordType.value;
+
+    let charset = "";
+    if (complexity === "high") charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    else if (complexity === "medium") charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    else charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    let stretched = base;
+    for (let i = 0; i < 100000; i++) {
+        stretched = simpleHash(stretched).toString();
     }
 
-    function handleKey(key) {
-      if (key === "SPACE") {
-        userInput.push(" ");
-      } else if (key === "BACKSPACE") {
-        userInput.pop();
-      } else if (key === "SHIFT") {
-        shiftActive = !shiftActive;
-        renderKeyboard();
-        return;
-      } else {
-        const charToAdd = shiftActive && key.length === 1 && key.match(/[a-z]/i)
-          ? key.toUpperCase()
-          : key;
-        userInput.push(charToAdd);
-      }
-      updateInputDisplay();
+    let pwd = "";
+    for (let i = 0; i < len; i++) {
+        const index = Math.abs(simpleHash(stretched + i)) % charset.length;
+        pwd += charset[index];
     }
 
-    function updateInputDisplay() {
-      document.getElementById("userInput").textContent = userInput.join("");
-    }
+    output.textContent = showPassword.checked ? pwd : "••••••••••••••••••";
+    output.setAttribute("data-pwd", pwd);
 
-    document.getElementById("lengthSlider").oninput = function () {
-      document.getElementById("lengthValue").textContent = this.value;
-    };
+    const strength = Math.min(100, len + (/[A-Z]/.test(pwd) + /[0-9]/.test(pwd) + /[^A-Za-z0-9]/.test(pwd)) * 20);
+    strengthBar.style.width = strength + "%";
+    strengthBar.style.backgroundColor = strength > 70 ? "green" : strength > 40 ? "orange" : "red";
+}
 
-    function sha256(str) {
-      const buffer = new TextEncoder("utf-8").encode(str);
-      return crypto.subtle.digest("SHA-256", buffer).then(hash => {
-        return Array.from(new Uint8Array(hash))
-          .map(b => b.toString(16).padStart(2, "0"))
-          .join("");
-      });
-    }
+generateBtn.onclick = generatePassword;
 
-    async function generatePassword() {
-      const inputText = userInput.join("");
-      const length = parseInt(document.getElementById("lengthSlider").value);
-      if (!inputText) return;
-      const hash = await sha256(inputText);
-      const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
-      let password = "";
+showPassword.onchange = () => {
+    const pwd = output.getAttribute("data-pwd") || "";
+    output.textContent = showPassword.checked ? pwd : "••••••••••••••••••";
+};
 
-      let seed = parseInt(hash.slice(0, 16), 16);
-      for (let i = 0; i < length; i++) {
-        seed = (seed * 9301 + 49297) % 233280;
-        const idx = Math.floor(seed / 233280 * charset.length);
-        password += charset[idx];
-      }
-
-      document.getElementById("passwordOutput").textContent = password;
-    }
-
-    renderKeyboard();
-  </script>
+copyBtn.onclick = () => {
+    const pwd = output.getAttribute("data-pwd");
+    if (!pwd) return alert("Generate password first!");
+    navigator.clipboard.writeText(pwd).then(() => {
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => copyBtn.textContent = "📋 Copy", 2000);
+    });
+};
+</script>
 </body>
 </html>
