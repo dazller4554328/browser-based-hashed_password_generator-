@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Offline Password Generator</title>
+  <title>Secure Offline Password Generator</title>
   <style>
     body {
       font-family: sans-serif;
@@ -48,7 +48,6 @@
       color: #ccc;
       cursor: pointer;
       font-size: 18px;
-      line-height: 1;
     }
     button.generate {
       margin-top: 20px;
@@ -86,18 +85,18 @@
 </head>
 <body>
   <div class="box">
-    <h2>🔒 Offline Password Generator</h2>
+    <h2>🔐 Secure Password Generator</h2>
     
     <label for="base">Master Password</label>
     <div class="input-group">
       <input type="password" id="base" autocomplete="off" />
-      <button type="button" class="toggle-visibility" onclick="toggleVisibility('base')">👁️</button>
+      <button class="toggle-visibility" onclick="toggleVisibility('base')">👁️</button>
     </div>
 
-    <label for="salt">Optional Salt (e.g. site name)</label>
+    <label for="salt">Optional Salt</label>
     <div class="input-group">
       <input type="password" id="salt" autocomplete="off" />
-      <button type="button" class="toggle-visibility" onclick="toggleVisibility('salt')">👁️</button>
+      <button class="toggle-visibility" onclick="toggleVisibility('salt')">👁️</button>
     </div>
 
     <label>Password Length</label>
@@ -112,16 +111,18 @@
   </div>
 
   <script>
-    function simpleHash(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-      }
-      return hash;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+    function toggleVisibility(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === "password" ? "text" : "password";
     }
 
-    function generate() {
+    document.getElementById('lengthSlider').addEventListener('input', function () {
+      document.getElementById('lengthValue').textContent = this.value;
+    });
+
+    async function generate() {
       const base = document.getElementById('base').value.trim();
       const salt = document.getElementById('salt').value.trim();
       const length = parseInt(document.getElementById('lengthSlider').value);
@@ -132,36 +133,25 @@
         return;
       }
 
-      const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
-      let seed = base + salt;
+      const combined = base + "|" + salt;
+      const encoder = new TextEncoder();
+      let result = "";
 
-      for (let i = 0; i < 1000; i++) {
-        seed = String(Math.abs(simpleHash(seed)));
+      // Use SHA-256 hash and slice bits to get indices
+      let seed = combined;
+      while (result.length < length) {
+        const data = encoder.encode(seed);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        for (let i = 0; i < hashArray.length && result.length < length; i++) {
+          const index = hashArray[i] % charset.length;
+          result += charset[index];
+        }
+        seed = seed + result; // ensure next round is different
       }
 
-      let password = "";
-      for (let i = 0; i < length; i++) {
-        const index = Math.abs(simpleHash(seed + i)) % charset.length;
-        password += charset.charAt(index);
-      }
-
-      output.textContent = password;
+      output.textContent = result;
     }
-
-    function toggleVisibility(id) {
-      const input = document.getElementById(id);
-      input.type = input.type === "password" ? "text" : "password";
-    }
-
-    document.getElementById('lengthSlider').addEventListener('input', function () {
-      document.getElementById('lengthValue').textContent = this.value;
-    });
   </script>
 </body>
 </html>
-
-
-
-
-
-
